@@ -1,9 +1,13 @@
+import sys
 import numpy as np
 # Get a 18 x 8 x 8 tensor representation of a chess position from a FEN string
 # 0-11: 6 piece types x 2 for each color
-# 12-15: Castling rights 
+# 12-15: Castling rights
 # 16: Enpassant target square
 # 17: Active player (1: White to move, 0: Black to move)
+
+NUM_BYTES = 18 * 8 * 8
+
 def get_tensor_bytes_from_fen(fen: str) -> bytes:
     piece_to_index = {
         'P': 0, 'N': 1, 'B': 2, 'R': 3, 'Q': 4, 'K': 5,
@@ -47,9 +51,26 @@ def get_tensor_bytes_from_fen(fen: str) -> bytes:
 
     # Decode active player (channel 17)
     if active_player == 'w':
-        tensor[17, :, :] = 1  
+        tensor[17, :, :] = 1
     # 1: White to move
     # else: black to move (already 0 by default)
 
     # Return as a Python bytes object
     return tensor.tobytes()
+
+def main():
+    args = sys.argv
+    if len(args) <= 1:
+        print("Missing FEN argument")
+        return
+    fen = args[1]
+
+    tensor_bytes = get_tensor_bytes_from_fen(fen)
+    hex_str = tensor_bytes.hex()
+    # Ensure the hex string is padded to the expected length (NUM_BYTES * 2 hex chars)
+    expected_hex_length = NUM_BYTES * 2
+    print(hex_str.zfill(expected_hex_length))
+
+if __name__ == "__main__":
+    main()
+
