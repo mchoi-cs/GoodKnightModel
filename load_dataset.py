@@ -35,17 +35,22 @@ def main():
             if isinstance(evaluation, str):
                 # Handle mate scores (M5, M-3, etc.)
                 if evaluation.startswith('M') or evaluation.startswith('#'):
-                    # Convert mate to large evaluation (positive for white, negative for black)
+                    # Convert mate to capped evaluation (positive for white, negative for black)
+                    # Cap at ±15 to prevent huge loss values
                     mate_num = evaluation.lstrip('M#')
                     if mate_num.startswith('-'):
-                        eval_float = -10000.0  # Mate for black
+                        eval_float = -15.0  # Mate for black
                     else:
-                        eval_float = 10000.0  # Mate for white
+                        eval_float = 15.0  # Mate for white
                 else:
                     # Regular numeric evaluation, remove any + prefix
                     eval_float = float(evaluation.lstrip('+'))
             else:
                 eval_float = float(evaluation)
+
+            # Clip evaluations to reasonable range (-15 to +15 pawns)
+            eval_float = np.clip(eval_float, -15.0, 15.0)
+
         except (ValueError, AttributeError):
             # Skip positions with invalid evaluations
             continue
