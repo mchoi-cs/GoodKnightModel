@@ -62,7 +62,7 @@ def train_model(model, train_loader, val_loader, num_epochs=10, lr=0.001, device
         device: 'cuda' or 'cpu'
     """
     criterion = nn.MSELoss()  # Mean Squared Error for regression
-    optimizer = optim.Adam(model.parameters(), lr=lr)
+    optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=1e-4)  # L2 regularization
 
     best_val_loss = float('inf')
 
@@ -125,7 +125,7 @@ def train_model(model, train_loader, val_loader, num_epochs=10, lr=0.001, device
 def main():
     # Configuration
     batch_size = 128
-    num_epochs = 60
+    num_epochs = 20
     learning_rate = 0.001
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 

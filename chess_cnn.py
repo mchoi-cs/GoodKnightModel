@@ -21,7 +21,7 @@ class ChessEvaluationCNN(nn.Module):
     - Fully connected layers for final evaluation
     """
 
-    def __init__(self, num_filters=256, num_res_blocks=10):
+    def __init__(self, num_filters=256, num_res_blocks=10, dropout_rate=0.3):
         super(ChessEvaluationCNN, self).__init__()
 
         # Initial convolution
@@ -30,7 +30,7 @@ class ChessEvaluationCNN(nn.Module):
 
         # Residual blocks
         self.res_blocks = nn.ModuleList([
-            ResidualBlock(num_filters) for _ in range(num_res_blocks)
+            ResidualBlock(num_filters, dropout_rate=dropout_rate) for _ in range(num_res_blocks)
         ])
 
         # Policy head (for move prediction - optional, can be removed)
@@ -41,6 +41,7 @@ class ChessEvaluationCNN(nn.Module):
         self.value_conv = nn.Conv2d(num_filters, 32, kernel_size=1)
         self.value_bn = nn.BatchNorm2d(32)
         self.value_fc1 = nn.Linear(32 * 8 * 8, 256)
+        self.value_dropout = nn.Dropout(dropout_rate)
         self.value_fc2 = nn.Linear(256, 1)
 
     def forward(self, x):
@@ -64,24 +65,28 @@ class ChessEvaluationCNN(nn.Module):
         val = F.relu(self.value_bn(self.value_conv(x)))
         val = val.view(val.size(0), -1)  # Flatten
         val = F.relu(self.value_fc1(val))
+        val = self.value_dropout(val)  # Apply dropout
         val = self.value_fc2(val)  # Output: evaluation score
 
         return val
 
 
 class ResidualBlock(nn.Module):
-    """Residual block with two convolutional layers."""
+    """Residual block with two convolutional layers and optional dropout."""
 
-    def __init__(self, num_filters):
+    def __init__(self, num_filters, dropout_rate=0.0):
         super(ResidualBlock, self).__init__()
         self.conv1 = nn.Conv2d(num_filters, num_filters, kernel_size=3, padding=1)
         self.bn1 = nn.BatchNorm2d(num_filters)
         self.conv2 = nn.Conv2d(num_filters, num_filters, kernel_size=3, padding=1)
         self.bn2 = nn.BatchNorm2d(num_filters)
+        self.dropout = nn.Dropout2d(dropout_rate) if dropout_rate > 0 else None
 
     def forward(self, x):
         residual = x
         out = F.relu(self.bn1(self.conv1(x)))
+        if self.dropout is not None:
+            out = self.dropout(out)
         out = self.bn2(self.conv2(out))
         out += residual  # Skip connection
         out = F.relu(out)
