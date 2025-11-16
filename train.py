@@ -114,7 +114,7 @@ def train_model(model, train_loader, val_loader, num_epochs=10, lr=0.001, device
         # Save best model
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
-            torch.save(model.state_dict(), 'best_chess_model.pth')
+            torch.save(model.state_dict(), '/app/models/best_chess_model.pth')
             print(f"Saved new best model with val loss: {avg_val_loss:.4f}\n")
 
     print("Training complete!")
@@ -167,7 +167,7 @@ def main():
     print("\nStarting training...\n")
     train_model(model, train_loader, val_loader, num_epochs=num_epochs, lr=learning_rate, device=device)
 
-    print("\nTraining finished! Best model saved as 'best_chess_model.pth'")
+    print("\nTraining finished! Best model saved as '/app/models/best_chess_model.pth'")
 
 
 if __name__ == "__main__":

@@ -20,5 +20,5 @@ COPY train.py .
 # Create directory for data and models
 RUN mkdir -p /app/data /app/models
 
-# Default command (run training)
-CMD ["python", "train.py"]
+# Default command (load dataset then run training)
+CMD ["sh", "-c", "python load_dataset.py && python train.py"]

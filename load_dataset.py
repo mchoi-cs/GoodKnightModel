@@ -13,6 +13,7 @@ def main():
     # Load the tactics dataset in streaming mode
     print("Loading chess-evaluations dataset (tactics) in streaming mode...")
     dataset = load_dataset("ssingh22/chess-evaluations", "tactics", split="train", streaming=True)
+    dataset = dataset.take(100_000)
 
     batch_size = 10000
     batch_num = 0
@@ -30,8 +31,28 @@ def main():
         # Convert bytes to numpy array (18x8x8)
         tensor = np.frombuffer(tensor_bytes, dtype=np.uint8).reshape(18, 8, 8)
 
+        # Convert evaluation to float (handle mate scores and string formats)
+        try:
+            if isinstance(evaluation, str):
+                # Handle mate scores (M5, M-3, etc.)
+                if evaluation.startswith('M') or evaluation.startswith('#'):
+                    # Convert mate to large evaluation (positive for white, negative for black)
+                    mate_num = evaluation.lstrip('M#')
+                    if mate_num.startswith('-'):
+                        eval_float = -10000.0  # Mate for black
+                    else:
+                        eval_float = 10000.0  # Mate for white
+                else:
+                    # Regular numeric evaluation, remove any + prefix
+                    eval_float = float(evaluation.lstrip('+'))
+            else:
+                eval_float = float(evaluation)
+        except (ValueError, AttributeError):
+            # Skip positions with invalid evaluations
+            continue
+
         tensors_batch.append(tensor)
-        evaluations_batch.append(evaluation)
+        evaluations_batch.append(eval_float)
 
         # Save batch when full
         if len(tensors_batch) >= batch_size:
