@@ -10,9 +10,34 @@ import numpy as np
 
 
 def main():
-    # Load the tactics dataset in streaming mode
-    print("Loading chess-evaluations dataset (tactics) in streaming mode...")
-    dataset = load_dataset("ssingh22/chess-evaluations", "tactics", split="train", streaming=True)
+    # Load multiple datasets in streaming mode
+    print("Loading chess-evaluations datasets in streaming mode...")
+
+    # Combine evals_large, randoms, and tactics for comprehensive training
+    # evals_large: 13M general positions
+    # randoms: 1M random positions
+    # tactics: 2.6M tactical positions
+    print("Loading evals_large (13M positions)...")
+    dataset1 = load_dataset("ssingh22/chess-evaluations", "evals_large", split="train", streaming=True)
+
+    print("Loading randoms (1M positions)...")
+    dataset2 = load_dataset("ssingh22/chess-evaluations", "randoms", split="train", streaming=True)
+
+    print("Loading tactics (2.6M positions)...")
+    dataset3 = load_dataset("ssingh22/chess-evaluations", "tactics", split="train", streaming=True)
+
+    # Interleave datasets for better mixing
+    from itertools import chain, islice
+
+    # Take samples from each dataset
+    dataset1_sample = islice(dataset1, 500_000)  # 500k from evals_large
+    dataset2_sample = islice(dataset2, 200_000)  # 200k from randoms
+    dataset3_sample = islice(dataset3, 300_000)  # 300k from tactics
+
+    # Chain them together (total: 1M positions)
+    dataset = chain(dataset1_sample, dataset2_sample, dataset3_sample)
+
+    print("Total target: ~1M positions from multiple subsets")
 
     batch_size = 10000
     batch_num = 0
