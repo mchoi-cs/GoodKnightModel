@@ -51,6 +51,9 @@ def main():
             # Clip evaluations to reasonable range (-15 to +15 pawns)
             eval_float = np.clip(eval_float, -15.0, 15.0)
 
+            # Normalize to [-1, 1] range for better training
+            eval_float = eval_float / 15.0
+
         except (ValueError, AttributeError):
             # Skip positions with invalid evaluations
             continue
