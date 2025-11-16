@@ -114,7 +114,9 @@ def train_model(model, train_loader, val_loader, num_epochs=10, lr=0.001, device
         # Save best model
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
-            torch.save(model.state_dict(), '/app/models/best_chess_model.pth')
+            model_path = '/app/models/best_chess_model.pth' if os.path.exists('/app/models') else 'models/best_chess_model.pth'
+            os.makedirs(os.path.dirname(model_path), exist_ok=True)
+            torch.save(model.state_dict(), model_path)
             print(f"Saved new best model with val loss: {avg_val_loss:.4f}\n")
 
     print("Training complete!")
@@ -167,7 +169,8 @@ def main():
     print("\nStarting training...\n")
     train_model(model, train_loader, val_loader, num_epochs=num_epochs, lr=learning_rate, device=device)
 
-    print("\nTraining finished! Best model saved as '/app/models/best_chess_model.pth'")
+    model_path = '/app/models/best_chess_model.pth' if os.path.exists('/app/models') else 'models/best_chess_model.pth'
+    print(f"\nTraining finished! Best model saved as '{model_path}'")
 
 
 if __name__ == "__main__":
