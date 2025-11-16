@@ -21,7 +21,7 @@ class ChessEvaluationCNN(nn.Module):
     - Fully connected layers for final evaluation
     """
 
-    def __init__(self, num_filters=256, num_res_blocks=10, dropout_rate=0.3):
+    def __init__(self, num_filters=64, num_res_blocks=3, dropout_rate=0.3):
         super(ChessEvaluationCNN, self).__init__()
 
         # Initial convolution
@@ -93,7 +93,7 @@ class ResidualBlock(nn.Module):
         return out
 
 
-def create_model(num_filters=256, num_res_blocks=10, device='cuda'):
+def create_model(num_filters=64, num_res_blocks=3, device='cuda'):
     """
     Create and initialize the chess evaluation model.
 
@@ -146,7 +146,7 @@ if __name__ == "__main__":
     print(f"Using device: {device}")
 
     # Create model
-    model = create_model(num_filters=128, num_res_blocks=5, device=device)
+    model = create_model(num_filters=64, num_res_blocks=3, device=device)
 
     # Print model summary
     print(f"\nModel created with {sum(p.numel() for p in model.parameters()):,} parameters")
