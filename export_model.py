@@ -83,7 +83,7 @@ def export_json_metadata(model_path='best_chess_model.pth', output_path='model_m
 
 
 def export_onnx(model_path='best_chess_model.pth', output_path='model.onnx',
-                num_filters=128, num_res_blocks=5):
+                num_filters=64, num_res_blocks=3):
     """
     Export model to ONNX format (cross-platform).
 
@@ -120,7 +120,7 @@ def export_onnx(model_path='best_chess_model.pth', output_path='model.onnx',
 
 
 def export_torchscript(model_path='best_chess_model.pth', output_path='model_scripted.pt',
-                       num_filters=128, num_res_blocks=5):
+                       num_filters=64, num_res_blocks=3):
     """
     Export model as TorchScript (portable PyTorch format).
 
@@ -159,13 +159,13 @@ def main():
     parser.add_argument(
         '--num-filters',
         type=int,
-        default=128,
+        default=64,
         help='Number of filters (must match trained model)'
     )
     parser.add_argument(
         '--num-res-blocks',
         type=int,
-        default=5,
+        default=3,
         help='Number of residual blocks (must match trained model)'
     )
 

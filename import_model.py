@@ -9,7 +9,7 @@ from chess_cnn import create_model
 from getTensorFromFen import get_tensor_bytes_from_fen
 
 
-def load_pytorch_weights(weights_path='model_weights.pth', num_filters=256, num_res_blocks=10, device='cpu'):
+def load_pytorch_weights(weights_path='model_weights.pth', num_filters=64, num_res_blocks=3, device='cpu'):
     """
     Load PyTorch weights (.pth format).
 
@@ -30,7 +30,7 @@ def load_pytorch_weights(weights_path='model_weights.pth', num_filters=256, num_
     return model
 
 
-def load_numpy_weights(weights_path='weights_numpy/model_weights.npz', num_filters=256, num_res_blocks=10, device='cpu'):
+def load_numpy_weights(weights_path='weights_numpy/model_weights.npz', num_filters=64, num_res_blocks=3, device='cpu'):
     """
     Load weights from NumPy format (.npz).
 
@@ -149,13 +149,13 @@ def main():
     parser.add_argument(
         '--num-filters',
         type=int,
-        default=256,
+        default=64,
         help='Number of filters (must match trained model)'
     )
     parser.add_argument(
         '--num-res-blocks',
         type=int,
-        default=10,
+        default=3,
         help='Number of residual blocks (must match trained model)'
     )
     parser.add_argument(
