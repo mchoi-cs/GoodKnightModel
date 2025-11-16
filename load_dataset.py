@@ -60,24 +60,23 @@ def main():
             if isinstance(evaluation, str):
                 # Handle mate scores (M5, M-3, etc.)
                 if evaluation.startswith('M') or evaluation.startswith('#'):
-                    # Convert mate to capped evaluation (positive for white, negative for black)
-                    # Cap at ±15 to prevent huge loss values
+                    # Convert mate to large centipawn value
                     mate_num = evaluation.lstrip('M#')
                     if mate_num.startswith('-'):
-                        eval_float = -15.0  # Mate for black
+                        eval_float = -10000.0  # Mate for black (in centipawns)
                     else:
-                        eval_float = 15.0  # Mate for white
+                        eval_float = 10000.0  # Mate for white (in centipawns)
                 else:
-                    # Regular numeric evaluation, remove any + prefix
+                    # Regular numeric evaluation (in centipawns)
                     eval_float = float(evaluation.lstrip('+'))
             else:
                 eval_float = float(evaluation)
 
-            # Clip evaluations to reasonable range (-15 to +15 pawns)
-            eval_float = np.clip(eval_float, -15.0, 15.0)
-
-            # Normalize to [-1, 1] range for better training
-            eval_float = eval_float / 15.0
+            # Normalize using sigmoid scaling for centipawn values
+            # Maps centipawns to (-1, 1) range
+            # Formula: 2 / (1 + exp(-x/400)) - 1
+            # This gives: 0cp->0, ±200cp->±0.39, ±400cp->±0.62, ±800cp->±0.86, ±10000->±1
+            eval_float = 2.0 / (1.0 + np.exp(-eval_float / 400.0)) - 1.0
 
         except (ValueError, AttributeError):
             # Skip positions with invalid evaluations
