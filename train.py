@@ -125,7 +125,7 @@ def train_model(model, train_loader, val_loader, num_epochs=10, lr=0.001, device
 def main():
     # Configuration
     batch_size = 128
-    num_epochs = 20
+    num_epochs = 60
     learning_rate = 0.001
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -161,7 +161,7 @@ def main():
 
     # Create model
     print("\nCreating model...")
-    model = create_model(num_filters=128, num_res_blocks=5, device=device)
+    model = create_model(num_filters=256, num_res_blocks=20, device=device)
 
     print(f"Model has {sum(p.numel() for p in model.parameters()):,} parameters")
 
