@@ -13,7 +13,6 @@ def main():
     # Load the tactics dataset in streaming mode
     print("Loading chess-evaluations dataset (tactics) in streaming mode...")
     dataset = load_dataset("ssingh22/chess-evaluations", "tactics", split="train", streaming=True)
-    dataset = dataset.take(100_000)
 
     batch_size = 10000
     batch_num = 0
