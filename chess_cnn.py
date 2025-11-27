@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/ usr / bin / env python3
 """
 CNN model for chess position evaluation.
 Input: 18x8x8 tensor (chess position)
@@ -21,28 +21,24 @@ class ChessEvaluationCNN(nn.Module):
     - Fully connected layers for final evaluation
     """
 
-    def __init__(self, num_filters=64, num_res_blocks=3, dropout_rate=0.3):
+    def __init__(self, num_filters=32, num_res_blocks=2, dropout_rate=0.2):
         super(ChessEvaluationCNN, self).__init__()
 
-        # Initial convolution
+        # Initial convolution(lighter)
         self.conv_input = nn.Conv2d(18, num_filters, kernel_size=3, padding=1)
         self.bn_input = nn.BatchNorm2d(num_filters)
 
-        # Residual blocks
+        # Residual blocks(fewer and lighter)
         self.res_blocks = nn.ModuleList([
             ResidualBlock(num_filters, dropout_rate=dropout_rate) for _ in range(num_res_blocks)
         ])
 
-        # Policy head (for move prediction - optional, can be removed)
-        self.policy_conv = nn.Conv2d(num_filters, 32, kernel_size=1)
-        self.policy_bn = nn.BatchNorm2d(32)
-
-        # Value head (for position evaluation)
-        self.value_conv = nn.Conv2d(num_filters, 32, kernel_size=1)
-        self.value_bn = nn.BatchNorm2d(32)
-        self.value_fc1 = nn.Linear(32 * 8 * 8, 256)
+#Value head(simplified - no policy head needed)
+        self.value_conv = nn.Conv2d(num_filters, 16, kernel_size=1)
+        self.value_bn = nn.BatchNorm2d(16)
+        self.value_fc1 = nn.Linear(16 * 8 * 8, 128)
         self.value_dropout = nn.Dropout(dropout_rate)
-        self.value_fc2 = nn.Linear(256, 1)
+        self.value_fc2 = nn.Linear(128, 1)
 
     def forward(self, x):
         """
@@ -93,13 +89,13 @@ class ResidualBlock(nn.Module):
         return out
 
 
-def create_model(num_filters=64, num_res_blocks=3, device='cuda'):
+def create_model(num_filters=32, num_res_blocks=2, device='cuda'):
     """
     Create and initialize the chess evaluation model.
 
     Args:
-        num_filters: Number of filters in convolutional layers
-        num_res_blocks: Number of residual blocks
+        num_filters: Number of filters in convolutional layers (default: 32 for lightweight)
+        num_res_blocks: Number of residual blocks (default: 2 for lightweight)
         device: 'cuda' or 'cpu'
 
     Returns:
@@ -145,8 +141,8 @@ if __name__ == "__main__":
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print(f"Using device: {device}")
 
-    # Create model
-    model = create_model(num_filters=64, num_res_blocks=3, device=device)
+    # Create model(lightweight version)
+    model = create_model(num_filters=32, num_res_blocks=2, device=device)
 
     # Print model summary
     print(f"\nModel created with {sum(p.numel() for p in model.parameters()):,} parameters")
