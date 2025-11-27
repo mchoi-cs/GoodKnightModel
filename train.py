@@ -26,7 +26,6 @@ class ChessDataset(Dataset):
             npzfile = np.load(file)
             self.data = np.concatenate([self.data, npzfile['input']], axis=0)
             self.labels = np.concatenate([self.labels, npzfile['output']], axis=0)
-            break
 
         self.data = torch.from_numpy(self.data).float()
         self.labels = torch.tensor(self.labels, dtype=torch.float32)
@@ -151,10 +150,10 @@ def main():
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     print(f"Using device: {device}")
-    print(f"Loading training data from: {data_dir}")
 
     # Creating our datasets
     dataset = ChessDataset(data_dir)
+    print(f"Loaded dataset with {len(dataset)} positions")
     train_size = int(0.8 * len(dataset))
     val_size   = len(dataset) - train_size
     train_ds, val_ds = random_split(dataset, [train_size, val_size])
