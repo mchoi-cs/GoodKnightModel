@@ -6,47 +6,36 @@ Train the chess evaluation CNN on chess positions.
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, random_split
 import numpy as np
 import glob
 import os
 from chess_cnn import create_model
+from pathlib import Path
 
 
 class ChessDataset(Dataset):
-    """Dataset for loading chess positions from .npz batch files."""
-
-    def __init__(self, batch_files):
+    def __init__(self, data_dir):
         """
         Args:
-            batch_files: List of .npz file paths
+            data_files: List of .npz files with data and labels
         """
-        self.data = []
+        self.data = np.empty((0, 18, 8, 8,))
+        self.labels = np.empty((0,))
+        for file in data_dir.iterdir():
+            npzfile = np.load(file)
+            self.data = np.concatenate([self.data, npzfile['input']], axis=0)
+            self.labels = np.concatenate([self.labels, npzfile['output']], axis=0)
+            break
 
-        print(f"Loading {len(batch_files)} batch files...")
-        for i, batch_file in enumerate(batch_files):
-            data = np.load(batch_file)
-            tensors = data['tensors']
-            evaluations = data['evaluations']
-
-            for tensor, evaluation in zip(tensors, evaluations):
-                self.data.append((tensor, evaluation))
-
-            print(f"Loaded {batch_file}: {len(tensors)} positions (total: {len(self.data)})")
-
-        print(f"Total dataset size: {len(self.data)} positions")
+        self.data = torch.from_numpy(self.data).float()
+        self.labels = torch.tensor(self.labels, dtype=torch.float32)
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
-        tensor, evaluation = self.data[idx]
-
-        # Convert to torch tensors
-        tensor = torch.from_numpy(tensor).float()
-        evaluation = torch.tensor(evaluation, dtype=torch.float32)
-
-        return tensor, evaluation
+        return self.data[idx], self.labels[idx]
 
 
 def train_model(model, train_loader, val_loader, num_epochs=10, lr=0.001, device='cuda'):
@@ -75,13 +64,27 @@ def train_model(model, train_loader, val_loader, num_epochs=10, lr=0.001, device
             tensors = tensors.to(device)
             evaluations = evaluations.to(device).unsqueeze(1)
 
+            # Check for NaN/Inf in input data
+            if torch.isnan(tensors).any() or torch.isinf(tensors).any():
+                print(f"Warning: NaN/Inf detected in input tensors at batch {batch_idx}")
+                continue
+            if torch.isnan(evaluations).any() or torch.isinf(evaluations).any():
+                print(f"Warning: NaN/Inf detected in evaluations at batch {batch_idx}")
+                continue
+
             # Forward pass
             optimizer.zero_grad()
             outputs = model(tensors)
             loss = criterion(outputs, evaluations)
 
-            # Backward pass
+            # Check for NaN loss
+            if torch.isnan(loss):
+                print(f"Warning: NaN loss at batch {batch_idx}, skipping batch")
+                continue
+
+            # Backward pass with gradient clipping
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
 
             train_loss += loss.item()
@@ -123,51 +126,52 @@ def train_model(model, train_loader, val_loader, num_epochs=10, lr=0.001, device
 
 
 def main():
+    import sys
+
+    # Check for directory argument
+    if len(sys.argv) < 2:
+        print("Usage: python train.py <data_directory>")
+        print("Example: python train.py ./training_data")
+        return
+
+    data_dir = Path(sys.argv[1])
+
+    if not data_dir.exists():
+        print(f"Error: Directory '{data_dir}' does not exist")
+        return
+
+    if not data_dir.is_dir():
+        print(f"Error: '{data_dir}' is not a directory")
+        return
+
     # Configuration
     batch_size = 128
     num_epochs = 20
-    learning_rate = 0.001
+    learning_rate = 0.0001  # Lower learning rate to prevent NaN
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     print(f"Using device: {device}")
+    print(f"Loading training data from: {data_dir}")
 
-    # Load batch files
-    batch_files = sorted(glob.glob("chess_tensors_batch_*.npz"))
-
-    if not batch_files:
-        print("Error: No batch files found. Run load_dataset.py first.")
-        return
-
-    print(f"Found {len(batch_files)} batch files")
-
-    # Split into train/val (80/20)
-    split_idx = int(len(batch_files) * 0.8)
-    train_files = batch_files[:split_idx]
-    val_files = batch_files[split_idx:]
-
-    print(f"Train files: {len(train_files)}")
-    print(f"Val files: {len(val_files)}")
-
-    # Create datasets
-    print("\nCreating training dataset...")
-    train_dataset = ChessDataset(train_files)
-
-    print("\nCreating validation dataset...")
-    val_dataset = ChessDataset(val_files)
+    # Creating our datasets
+    dataset = ChessDataset(data_dir)
+    train_size = int(0.8 * len(dataset))
+    val_size   = len(dataset) - train_size
+    train_ds, val_ds = random_split(dataset, [train_size, val_size])
 
     # Create data loaders
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=4)
+    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=4)
+    val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, num_workers=4)
 
-    # Create model
-    print("\nCreating model...")
-    model = create_model(num_filters=256, num_res_blocks=20, device=device)
+    # Create model (lightweight for depth-10 evaluations)
+    print("\nCreating lightweight model...")
+    model = create_model(num_filters=32, num_res_blocks=2, device=device)
 
     print(f"Model has {sum(p.numel() for p in model.parameters()):,} parameters")
 
     # Train model
     print("\nStarting training...\n")
-    train_model(model, train_loader, val_loader, num_epochs=num_epochs, lr=learning_rate, device=device)
+    train_model(model, train_loader, val_loader=val_loader, num_epochs=num_epochs, lr=learning_rate, device=device)
 
     model_path = '/app/models/best_chess_model.pth' if os.path.exists('/app/models') else 'models/best_chess_model.pth'
     print(f"\nTraining finished! Best model saved as '{model_path}'")
