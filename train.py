@@ -20,15 +20,38 @@ class ChessDataset(Dataset):
         Args:
             data_files: List of .npz files with data and labels
         """
-        self.data = np.empty((0, 18, 8, 8,))
-        self.labels = np.empty((0,))
-        for file in data_dir.iterdir():
-            npzfile = np.load(file)
-            self.data = np.concatenate([self.data, npzfile['input']], axis=0)
-            self.labels = np.concatenate([self.labels, npzfile['output']], axis=0)
+        print(f"Found {len(data_dir.iterdir())} .npz files")
 
-        self.data = torch.from_numpy(self.data).float()
-        self.labels = torch.tensor(self.labels, dtype=torch.float32)
+        # First pass: count total samples
+        total_samples = 0
+        for file in data_dir.iterdir():
+            npz = np.load(file)
+            total_samples += len(npz['input'])
+            npz.close()
+
+        print(f"Total samples: {total_samples:,}")
+
+        # Pre-allocate arrays
+        data_np = np.empty((total_samples, 18, 8, 8), dtype=np.uint8)
+        labels_np = np.empty((total_samples,), dtype=np.float32)
+
+        # Second pass: fill arrays
+        offset = 0
+        for i, file in enumerate(files_list):
+            npz = np.load(file)
+            n_samples = len(npz['input'])
+            data_np[offset:offset+n_samples] = npz['input']
+            labels_np[offset:offset+n_samples] = npz['output']
+            offset += n_samples
+
+            if (i + 1) % 50 == 0:
+                print(f"  Loaded {i+1}/{len(data_dir.iterdir())} files...")
+
+        print(f"Finished loading all {len(data_dir.iterdir())} files")
+
+        # Convert to PyTorch tensors
+        self.data = torch.from_numpy(data_np).float()
+        self.labels = torch.tensor(labels_np, dtype=torch.float32)
 
     def __len__(self):
         return len(self.data)
