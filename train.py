@@ -20,7 +20,7 @@ class ChessDataset(Dataset):
         Args:
             data_files: List of .npz files with data and labels
         """
-        print(f"Found {len(data_dir.iterdir())} .npz files")
+        print(f"Found {sum(1 for f in data_dir.iterdir())} .npz files")
 
         # First pass: count total samples
         total_samples = 0
@@ -37,7 +37,7 @@ class ChessDataset(Dataset):
 
         # Second pass: fill arrays
         offset = 0
-        for i, file in enumerate(files_list):
+        for i, file in enumerate(data_dir.iterdir()):
             npz = np.load(file)
             n_samples = len(npz['input'])
             data_np[offset:offset+n_samples] = npz['input']
@@ -45,9 +45,9 @@ class ChessDataset(Dataset):
             offset += n_samples
 
             if (i + 1) % 50 == 0:
-                print(f"  Loaded {i+1}/{len(data_dir.iterdir())} files...")
+                print(f"  Loaded {i+1}/{sum(1 for f in data_dir.iterdir())} files...")
 
-        print(f"Finished loading all {len(data_dir.iterdir())} files")
+        print(f"Finished loading all {sum(1 for f in data_dir.iterdir())} files")
 
         # Convert to PyTorch tensors
         self.data = torch.from_numpy(data_np).float()
