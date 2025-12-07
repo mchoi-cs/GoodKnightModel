@@ -3,22 +3,24 @@
 Train the chess evaluation CNN on chess positions.
 """
 
-import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader, random_split
-import numpy as np
-import glob
 import os
-from chess_cnn import create_model
 from pathlib import Path
+
+import numpy as np
+import torch
+from torch import nn, optim
+from torch.utils.data import Dataset, DataLoader, random_split
+
+from chess_cnn import create_model
 
 
 class ChessDataset(Dataset):
+    """Dataset for loading chess position data from .npz files."""
+
     def __init__(self, data_dir):
         """
         Args:
-            data_files: List of .npz files with data and labels
+            data_dir: Directory containing .npz files with data and labels
         """
         print(f"Found {sum(1 for f in data_dir.iterdir())} .npz files")
 
@@ -112,7 +114,11 @@ def train_model(model, train_loader, val_loader, num_epochs=10, lr=0.001, device
             train_loss += loss.item()
 
             if (batch_idx + 1) % 100 == 0:
-                print(f"Epoch [{epoch+1}/{num_epochs}], Batch [{batch_idx+1}/{len(train_loader)}], Loss: {loss.item():.4f}")
+                print(
+                    f"Epoch [{epoch+1}/{num_epochs}], "
+                    f"Batch [{batch_idx+1}/{len(train_loader)}], "
+                    f"Loss: {loss.item():.4f}"
+                )
 
         avg_train_loss = train_loss / len(train_loader)
 
@@ -139,7 +145,11 @@ def train_model(model, train_loader, val_loader, num_epochs=10, lr=0.001, device
         # Save best model
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
-            model_path = '/app/models/best_chess_model.pth' if os.path.exists('/app/models') else 'models/best_chess_model.pth'
+            model_path = (
+                '/app/models/best_chess_model.pth'
+                if os.path.exists('/app/models')
+                else 'models/best_chess_model.pth'
+            )
             os.makedirs(os.path.dirname(model_path), exist_ok=True)
             torch.save(model.state_dict(), model_path)
             print(f"Saved new best model with val loss: {avg_val_loss:.4f}\n")
@@ -148,7 +158,8 @@ def train_model(model, train_loader, val_loader, num_epochs=10, lr=0.001, device
 
 
 def main():
-    import sys
+    """Main function to train the chess evaluation model."""
+    import sys  # pylint: disable=import-outside-toplevel
 
     # Check for directory argument
     if len(sys.argv) < 2:
@@ -193,9 +204,20 @@ def main():
 
     # Train model
     print("\nStarting training...\n")
-    train_model(model, train_loader, val_loader=val_loader, num_epochs=num_epochs, lr=learning_rate, device=device)
+    train_model(
+        model,
+        train_loader,
+        val_loader=val_loader,
+        num_epochs=num_epochs,
+        lr=learning_rate,
+        device=device
+    )
 
-    model_path = '/app/models/best_chess_model.pth' if os.path.exists('/app/models') else 'models/best_chess_model.pth'
+    model_path = (
+        '/app/models/best_chess_model.pth'
+        if os.path.exists('/app/models')
+        else 'models/best_chess_model.pth'
+    )
     print(f"\nTraining finished! Best model saved as '{model_path}'")
 
 
