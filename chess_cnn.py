@@ -6,7 +6,7 @@ Output: evaluation score
 """
 
 import torch
-import torch.nn as nn
+from torch import nn
 import torch.nn.functional as F
 
 
@@ -22,7 +22,7 @@ class ChessEvaluationCNN(nn.Module):
     """
 
     def __init__(self, num_filters=32, num_res_blocks=2, dropout_rate=0.2):
-        super(ChessEvaluationCNN, self).__init__()
+        super().__init__()
 
         # Initial convolution(lighter)
         self.conv_input = nn.Conv2d(18, num_filters, kernel_size=3, padding=1)
@@ -71,7 +71,7 @@ class ResidualBlock(nn.Module):
     """Residual block with two convolutional layers and optional dropout."""
 
     def __init__(self, num_filters, dropout_rate=0.0):
-        super(ResidualBlock, self).__init__()
+        super().__init__()
         self.conv1 = nn.Conv2d(num_filters, num_filters, kernel_size=3, padding=1)
         self.bn1 = nn.BatchNorm2d(num_filters)
         self.conv2 = nn.Conv2d(num_filters, num_filters, kernel_size=3, padding=1)
@@ -79,6 +79,7 @@ class ResidualBlock(nn.Module):
         self.dropout = nn.Dropout2d(dropout_rate) if dropout_rate > 0 else None
 
     def forward(self, x):
+        """Forward pass through residual block."""
         residual = x
         out = F.relu(self.bn1(self.conv1(x)))
         if self.dropout is not None:
@@ -138,22 +139,25 @@ if __name__ == "__main__":
     # Example usage
     print("Creating Chess Evaluation CNN...")
 
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    print(f"Using device: {device}")
+    DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+    print(f"Using device: {DEVICE}")
 
     # Create model(lightweight version)
-    model = create_model(num_filters=32, num_res_blocks=2, device=device)
+    example_model = create_model(num_filters=32, num_res_blocks=2, device=DEVICE)
 
     # Print model summary
-    print(f"\nModel created with {sum(p.numel() for p in model.parameters()):,} parameters")
+    print(
+        f"\nModel created with "
+        f"{sum(p.numel() for p in example_model.parameters()):,} parameters"
+    )
 
     # Test with random input
-    batch_size = 4
-    test_input = torch.randn(batch_size, 18, 8, 8).to(device)
+    BATCH_SIZE = 4
+    test_input = torch.randn(BATCH_SIZE, 18, 8, 8).to(DEVICE)
 
-    model.eval()
+    example_model.eval()
     with torch.no_grad():
-        output = model(test_input)
+        output = example_model(test_input)
 
     print(f"\nTest input shape: {test_input.shape}")
     print(f"Test output shape: {output.shape}")
